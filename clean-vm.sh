@@ -1,3 +1,3 @@
 #!/bin/bash
-VBoxManage unregistervm testvm-linux --delete
+VBoxManage unregistervm ${1} --delete
 
