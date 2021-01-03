@@ -13,5 +13,19 @@ Scripts and libraries to use VirtualBox ( https://www.virtualbox.org )
         --vrde-port 2005 --cpus 8
   ```
 
+  ```
+  $> ./create-vm.sh -h
+  ARGUMENTS is  -h --
+  --vm-name | -n VM Name
+  --image-path | -i ISO Image path
+  --base-dir | -b base directory, default = /mnt/work/virtualbox
+  --vrde-port | -v port number for vrde
+  --cpus | -c Number of cpus
+  --memory-size | -m Memory Size ( in MB )
+  --video-memory-size Video Memory Size ( in MB ), default = 64
+  --ostype | -o OS Type (--ostype on vboxmanage createvm)
+  --root-disk-size Root disk size in MB, default = 15000
+  ```
+
 ## Link
 * https://www.virtualbox.org
