@@ -90,6 +90,10 @@ if [ -z $VIDEO_MEMORY_SIZE ]
 then
     VIDEO_MEMORY_SIZE="64"
 fi
+if [ -z $ROOT_DISK_SIZE ]
+then
+    ROOT_DISK_SIZE="20000"
+fi
 
 VM_PATH="$BASE_DIR/$VM_NAME"
 MEDIUM_PATH="${VM_PATH}/${VM_NAME}_disk.vdi"
@@ -126,20 +130,18 @@ vboxmanage createmedium  disk --filename ${MEDIUM_PATH} \
     --size ${ROOT_DISK_SIZE} \
     --format VDI \
     --variant Standard
-
 sata_control_name="${VM_NAME}_SATA-storage1"
 vboxmanage storagectl $VM_NAME \
     --name "${sata_control_name}" \
     --add sata \
     --controller IntelAHCI \
     --bootable on
-
 vboxmanage storageattach $VM_NAME \
     --storagectl "${sata_control_name}" \
     --port 0 \
     --device 0 \
     --type hdd \
-    --medium  ${MEDIUM_PATH} \
+    --medium  ${MEDIUM_PATH}
 VBoxManage storagectl $VM_NAME --name "IDE Controller" --add ide --controller PIIX4
 VBoxManage storageattach $VM_NAME --storagectl "IDE Controller" --port 1 --device 0 --type dvddrive --medium $IMAGE_PATH
 VBoxManage startvm $VM_NAME --type=headless
