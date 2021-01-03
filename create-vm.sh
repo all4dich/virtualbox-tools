@@ -1,12 +1,15 @@
 #!/bin/bash
 BASE_DIR="/mnt/work/virtualbox"
-while getopts ":n:i:b:v:h" opt; do
+while getopts ":n:i:b:v:c:h" opt; do
     case $opt in
     h|\?)
         echo "-n VM Name"
         echo "-i ISO Image path"
         echo "-b base directory, default = ${BASE_DIR}"
         echo "-v port number for vrde"
+        echo "-c Number of cpus"
+        echo "-m Memory Size ( in MB )"
+        echo "-o OS Type (--ostype on vboxmanage createvm)"
         exit 1
         ;;
     n)
@@ -21,6 +24,15 @@ while getopts ":n:i:b:v:h" opt; do
     v)
         VRDE_PORT=${OPTARG}
         ;;
+    c)
+        CPUS=${OPTARG}
+        ;;
+    m)
+        MEMORY_SIZE=${OPTARG}
+        ;;
+    o)
+        OSTYPE=${OPTARG}
+        ;;
     :)
         echo "Option -$OPTARG requires an argument." >&2
         exit 1
@@ -34,6 +46,22 @@ then
     echo "ERROR: Image path( -i ) = "$IMAGE_PATH
     exit 1
 fi
+
+if [ -z $CPUS ]
+then
+    CPUS=$(expr `nproc` / 2 )
+fi
+
+if [ -z $MEMORY_SIZE ]
+then
+    MEMORY_SIZE=8192
+fi
+
+if [ -z $OSTYPE ]
+then
+    OSTYPE="Ubuntu_64"
+fi
+
 VM_PATH="$BASE_DIR/$VM_NAME"
 MEDIUM_PATH="${VM_PATH}/${VM_NAME}_disk.vdi"
 echo "INFO: VM name = "$VM_NAME
@@ -43,15 +71,15 @@ echo "INFO: Base directory = " $BASE_DIR
 echo "INFO: Default disk file path = " $MEDIUM_PATH
 
 vboxmanage createvm --name $VM_NAME \
-    --ostype  Ubuntu_64 \
+    --ostype $OSTYPE \
     --basefolder $BASE_DIR \
     --register
 
 vboxmanage modifyvm $VM_NAME \
-    --ostype  Ubuntu_64 \
-    --memory 8192 \
+    --ostype  $OSTYPE \
+    --memory $MEMORY_SIZE \
     --vram 64 \
-    --cpus 8 \
+    --cpus $CPUS \
     --nic1 nat \
     --graphicscontroller vmsvga \
     --nic2 hostonly \
@@ -85,6 +113,3 @@ vboxmanage storageattach $VM_NAME \
 VBoxManage storagectl $VM_NAME --name "IDE Controller" --add ide --controller PIIX4
 VBoxManage storageattach $VM_NAME --storagectl "IDE Controller" --port 1 --device 0 --type dvddrive --medium $IMAGE_PATH
 VBoxManage startvm $VM_NAME --type=headless
-
-
-
