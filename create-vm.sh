@@ -1,43 +1,71 @@
 #!/bin/bash
 BASE_DIR="/mnt/work/virtualbox"
-while getopts ":n:i:b:v:c:h" opt; do
-    case $opt in
-    h|\?)
-        echo "-n VM Name"
-        echo "-i ISO Image path"
-        echo "-b base directory, default = ${BASE_DIR}"
-        echo "-v port number for vrde"
-        echo "-c Number of cpus"
-        echo "-m Memory Size ( in MB )"
-        echo "-o OS Type (--ostype on vboxmanage createvm)"
-        exit 1
+function usage() {
+    echo "--vm-name | -n VM Name"
+    echo "--image-path | -i ISO Image path"
+    echo "--base-dir | -b base directory, default = ${BASE_DIR}"
+    echo "--vrde-port | -v port number for vrde"
+    echo "--cpus | -c Number of cpus"
+    echo "--memory-size | -m Memory Size ( in MB )"
+    echo "--video-memory-size Video Memory Size ( in MB ), default = 64"
+    echo "--ostype | -o OS Type (--ostype on vboxmanage createvm)"
+    echo "--root-disk-size Root disk size in MB, default = 15000"
+    exit 2
+}
+
+ARGUMENTS=$(getopt -a -n alphabet -o n:i:b:v:c:h --long vm-name:,image-path:,base-dir:,vrde-port:,cpus:,memory-size:,video-memory-size:,os-type:,root-disk-size: -- "$@")
+VALID_ARGUMENTS=$?
+if [ "$VALID_ARGUMENTS" != "0" ]; then
+  usage
+fi
+echo "ARGUMENTS is $ARGUMENTS"
+eval set -- "$ARGUMENTS"
+while :
+do
+  case "$1" in
+    -h | --help)
+        usage
         ;;
-    n)
-        VM_NAME=${OPTARG}
+    -n | --vm-name)
+        VM_NAME="${2}"
+        shift 2
         ;;
-    i)
-        IMAGE_PATH=${OPTARG}
+    -i | --image-path)
+        IMAGE_PATH="$2"
+        shift 2
         ;;
-    b)
-        BASE_DIR=${OPTARG}
+    -b | --base-dir)
+        BASE_DIR="$2"
+        shift 2
         ;;
-    v)
-        VRDE_PORT=${OPTARG}
+    -v | --vrde-port)
+        VRDE_PORT="$2"
+        shift 2
         ;;
-    c)
-        CPUS=${OPTARG}
+    -c | --cpus)
+        CPUS="$2"
+        shift 2
         ;;
-    m)
-        MEMORY_SIZE=${OPTARG}
+    -m | --memory-size)
+        MEMORY_SIZE="$2"
+        shift 2
         ;;
-    o)
-        OSTYPE=${OPTARG}
+    --video-memory-size)
+        VIDEO_MEMORY_SIZE="$2"
+        shift 2
         ;;
-    :)
-        echo "Option -$OPTARG requires an argument." >&2
-        exit 1
+    -o | --os-type)
+        OS_TYPE="$2"
+        shift 2
         ;;
-    esac
+    --root-disk-size)
+        ROOT_DISK_SIZE="$2"
+        shift 2
+        ;;
+    --) shift; break ;;
+    *) echo "Unexpected option: $1 - this should not happen."
+       usage ;;
+  esac
 done
 
 if [ -z $VM_NAME ] || [ -z $IMAGE_PATH ]
@@ -46,20 +74,21 @@ then
     echo "ERROR: Image path( -i ) = "$IMAGE_PATH
     exit 1
 fi
-
 if [ -z $CPUS ]
 then
     CPUS=$(expr `nproc` / 2 )
 fi
-
 if [ -z $MEMORY_SIZE ]
 then
     MEMORY_SIZE=8192
 fi
-
-if [ -z $OSTYPE ]
+if [ -z $OS_TYPE ]
 then
-    OSTYPE="Ubuntu_64"
+    OS_TYPE="Ubuntu_64"
+fi
+if [ -z $VIDEO_MEMORY_SIZE ]
+then
+    VIDEO_MEMORY_SIZE="64"
 fi
 
 VM_PATH="$BASE_DIR/$VM_NAME"
@@ -71,28 +100,30 @@ echo "INFO: Base directory = " $BASE_DIR
 echo "INFO: Default disk file path = " $MEDIUM_PATH
 
 vboxmanage createvm --name $VM_NAME \
-    --ostype $OSTYPE \
+    --ostype $OS_TYPE \
     --basefolder $BASE_DIR \
     --register
 
 vboxmanage modifyvm $VM_NAME \
-    --ostype  $OSTYPE \
+    --ostype  $OS_TYPE \
     --memory $MEMORY_SIZE \
-    --vram 64 \
+    --vram $VIDEO_MEMORY_SIZE \
     --cpus $CPUS \
     --nic1 nat \
     --graphicscontroller vmsvga \
     --nic2 hostonly \
     --hostonlyadapter2 vboxnet0
-
-if [ -n ${VRDE_PORT} ]; then
+if [ -z $VRDE_PORT ]
+then
+    echo "INFO: VRDE is disabled"
+else
+set -x
 vboxmanage modifyvm $VM_NAME \
     --vrde on \
     --vrdeport ${VRDE_PORT}
 fi
-
 vboxmanage createmedium  disk --filename ${MEDIUM_PATH} \
-    --size 15000 \
+    --size ${ROOT_DISK_SIZE} \
     --format VDI \
     --variant Standard
 
@@ -109,7 +140,7 @@ vboxmanage storageattach $VM_NAME \
     --device 0 \
     --type hdd \
     --medium  ${MEDIUM_PATH} \
-
 VBoxManage storagectl $VM_NAME --name "IDE Controller" --add ide --controller PIIX4
 VBoxManage storageattach $VM_NAME --storagectl "IDE Controller" --port 1 --device 0 --type dvddrive --medium $IMAGE_PATH
 VBoxManage startvm $VM_NAME --type=headless
+set +x
