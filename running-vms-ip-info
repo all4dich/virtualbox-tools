@@ -1,0 +1,24 @@
+#!/usr/bin/env python3
+import subprocess
+
+def get_vm_ip(vm_name):
+    get_ip_command = f"VBoxManage guestproperty enumerate '{vm_name}'|sort|grep IP"
+    vm_properties = subprocess.check_output(get_ip_command, shell=True)
+    ip_info = vm_properties.decode("utf8") 
+    return ip_info
+
+if __name__ == "__main__":
+    runningvms_cmd="VBoxManage list runningvms --sorted"
+    # Get running vm list from shell command
+    output = subprocess.check_output(runningvms_cmd,shell=True)
+    # Convert bytes to string
+    output_decoded = output.decode("utf8")
+    vms_list = output_decoded.split("\n")
+    for vms in vms_list:
+        if vms != "":
+            vm_info = vms.split("\" {")
+            vm_name = vm_info[0].replace("\"", "")
+            vm_id = vm_info[1].replace("}", "")
+            print(vm_name)
+            print(get_vm_ip(vm_name))
+            print("")
