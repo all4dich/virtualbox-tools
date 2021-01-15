@@ -2,10 +2,16 @@
 import subprocess
 
 def get_vm_ip(vm_name):
-    get_ip_command = f"VBoxManage guestproperty enumerate '{vm_name}'|sort|grep IP"
-    vm_properties = subprocess.check_output(get_ip_command, shell=True)
-    ip_info = vm_properties.decode("utf8") 
+    get_vm_info_cmd= f"VBoxManage guestproperty enumerate '{vm_name}'|sort|grep IP"
+    vm_network = subprocess.check_output(get_vm_info_cmd, shell=True)
+    ip_info = vm_network.decode("utf8") 
     return ip_info
+
+def get_vm_network(vm_name):
+    get_vm_info_cmd= f"VBoxManage showvminfo --machinereadable '{vm_name}'|grep network"
+    vm_network = subprocess.check_output(get_vm_info_cmd, shell=True)
+    vm_net_info  = vm_network.decode("utf8") 
+    return vm_net_info 
 
 if __name__ == "__main__":
     runningvms_cmd="VBoxManage list runningvms --sorted"
@@ -21,4 +27,5 @@ if __name__ == "__main__":
             vm_id = vm_info[1].replace("}", "")
             print(vm_name)
             print(get_vm_ip(vm_name))
+            print(get_vm_network(vm_name))
             print("")
