@@ -3,12 +3,15 @@ import subprocess
 
 def get_vm_ip(vm_name):
     get_vm_info_cmd= f"VBoxManage guestproperty enumerate '{vm_name}'|sort|grep IP"
-    vm_network = subprocess.check_output(get_vm_info_cmd, shell=True)
-    ip_info = vm_network.decode("utf8") 
+    try:
+        vm_network = subprocess.check_output(get_vm_info_cmd, shell=True)
+        ip_info = vm_network.decode("utf8")
+    except:
+        ip_info = "None\n"
     return ip_info
 
 def get_vm_network(vm_name):
-    get_vm_info_cmd= f"VBoxManage showvminfo --machinereadable '{vm_name}'|grep network"
+    get_vm_info_cmd= f"VBoxManage showvminfo --machinereadable '{vm_name}'|grep -E  '(nic|network|adapter|vboxnet)'"
     vm_network = subprocess.check_output(get_vm_info_cmd, shell=True)
     vm_net_info  = vm_network.decode("utf8") 
     return vm_net_info 
@@ -25,7 +28,7 @@ if __name__ == "__main__":
             vm_info = vms.split("\" {")
             vm_name = vm_info[0].replace("\"", "")
             vm_id = vm_info[1].replace("}", "")
-            print(vm_name)
+            print("# " + vm_name + " #\n")
             print(get_vm_ip(vm_name))
             print(get_vm_network(vm_name))
             print("")
