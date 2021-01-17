@@ -2,47 +2,57 @@
 import subprocess
 import configparser
 
-# Sample command: ▶ vboxmanage showvminfo --details test_ubuntu --machinereadable >  second.txt
+
 def get_vm_info(vm_name):
     get_vm_info_cmd = f"VBoxManage showvminfo --details {vm_name} --machinereadable"
-    vm_info_str = subprocess.check_output(get_vm_info_cmd, shell=True).decode("utf8")
-    config = configparser.RawConfigParser() 
+    vm_info_str = subprocess.check_output(
+        get_vm_info_cmd, shell=True).decode("utf8")
+    config = configparser.RawConfigParser()
     config.read_string("[vm_info]\n" + vm_info_str)
     return config['vm_info']
 
+
 def get_vm_ip(vm_name):
     vm_info = get_vm_info(vm_name)
-    all_nic = list(range(1,9))
+    all_nic = list(range(1, 9))
     ip_list = []
     for nic_number in all_nic:
         nic_name = f"nic{nic_number}"
-        #print(nic_name)
+        # print(nic_name)
         if vm_info[nic_name] != "\"none\"":
             nic_type = vm_info[nic_name].replace("\"", "")
-            mac_address= vm_info[f"macaddress{nic_number}"]
+            mac_address = vm_info[f"macaddress{nic_number}"]
             if nic_type == "nat":
                 nic_ip = "NAT"
             elif nic_type == "natnetwork":
                 nat_net_name = vm_info[f"nat-network{nic_number}"]
-                nat_net_cmd = "VBoxManage dhcpserver findlease --network "+ nat_net_name + " --mac-address=" + mac_address  + "|grep -E ^IP|awk '{print $NF}'"
-                nic_ip = subprocess.check_output(nat_net_cmd, shell=True).decode("utf8").strip()
+                nat_net_cmd = "VBoxManage dhcpserver findlease --network " + nat_net_name + \
+                    " --mac-address=" + mac_address + \
+                    "|grep -E ^IP|awk '{print $NF}'"
+                nic_ip = subprocess.check_output(
+                    nat_net_cmd, shell=True).decode("utf8").strip()
             elif nic_type == "hostonly":
                 adapter_name = vm_info[f"hostonlyadapter{nic_number}"]
-                hostonly_net_cmd = "VBoxManage dhcpserver findlease --interface " + adapter_name + " --mac-address=" + mac_address + "|grep -E ^IP|awk '{print $NF}'"
-                nic_ip = subprocess.check_output(hostonly_net_cmd, shell=True).decode("utf8").strip()
+                hostonly_net_cmd = "VBoxManage dhcpserver findlease --interface " + \
+                    adapter_name + " --mac-address=" + \
+                    mac_address + "|grep -E ^IP|awk '{print $NF}'"
+                nic_ip = subprocess.check_output(
+                    hostonly_net_cmd, shell=True).decode("utf8").strip()
             ip_list.append([nic_name, nic_type, mac_address, nic_ip])
     return ip_list
 
+
 def get_vm_network(vm_name):
-    get_vm_info_cmd= f"VBoxManage showvminfo --machinereadable '{vm_name}'|grep -E  '(nic|network|adapter|vboxnet)'"
+    get_vm_info_cmd = f"VBoxManage showvminfo --machinereadable '{vm_name}'|grep -E  '(nic|network|adapter|vboxnet)'"
     vm_network = subprocess.check_output(get_vm_info_cmd, shell=True)
-    vm_net_info  = vm_network.decode("utf8") 
-    return vm_net_info 
+    vm_net_info = vm_network.decode("utf8")
+    return vm_net_info
+
 
 if __name__ == "__main__":
-    runningvms_cmd="VBoxManage list runningvms --sorted"
+    runningvms_cmd = "VBoxManage list runningvms --sorted"
     # Get running vm list from shell command
-    output = subprocess.check_output(runningvms_cmd,shell=True)
+    output = subprocess.check_output(runningvms_cmd, shell=True)
     # Convert bytes to string
     output_decoded = output.decode("utf8")
     vms_list = output_decoded.split("\n")
@@ -55,5 +65,4 @@ if __name__ == "__main__":
             IP = get_vm_ip(vm_name)
             for each_ip in IP:
                 print(each_ip)
-            #print(get_vm_network(vm_name))
             print("")
