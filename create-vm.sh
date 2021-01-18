@@ -126,6 +126,7 @@ vboxmanage modifyvm $VM_NAME \
     --vrde on \
     --vrdeport ${VRDE_PORT}
 fi
+
 vboxmanage createmedium  disk --filename ${MEDIUM_PATH} \
     --size ${ROOT_DISK_SIZE} \
     --format VDI \
@@ -142,7 +143,9 @@ vboxmanage storageattach $VM_NAME \
     --device 0 \
     --type hdd \
     --medium  ${MEDIUM_PATH}
+
 VBoxManage storagectl $VM_NAME --name "IDE Controller" --add ide --controller PIIX4
 VBoxManage storageattach $VM_NAME --storagectl "IDE Controller" --port 1 --device 0 --type dvddrive --medium $IMAGE_PATH
+
 VBoxManage unattended install $VM_NAME --iso=$IMAGE_PATH --user ubuntu --password ubuntu --full-user-name ubuntu --install-additions --country=KR --time-zone="Asia/Seoul" --hostname="${VM_NAME}.local" --start-vm=headless
 set +x
