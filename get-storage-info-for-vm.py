@@ -6,7 +6,6 @@ import re
 print("")
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('--vm-name', required=True)
-parser.add_argument('--controller-name', required=True)
 args = parser.parse_args()
 vm_name = args.vm_name
 # Parse vm information as configuration format
